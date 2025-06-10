@@ -1,4 +1,4 @@
-package it.unipi.hadoop.project;
+package xyz.nardone.project;
 
 import java.io.DataInput;
 import java.io.DataOutput;

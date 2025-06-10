@@ -1,11 +1,8 @@
-package it.unipi.project;
+package xyz.nardone.project;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.conf.Configuration;
@@ -27,51 +24,36 @@ public class InvertedIndex
 {
     public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> 
     {
-        List<String> queryWords = new ArrayList<>();
-
-        @Override
-        protected void setup(Context context) {
-            Configuration conf = context.getConfiguration();
-            String query = conf.get("query");
-
-            queryWords = Arrays.asList(query.toLowerCase().split("\\s+"));
-        }
     
+        Map<Word_File, Integer> H = new HashMap<>();
+
         @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException 
+        {   
+            
             String file = ((FileSplit) context.getInputSplit()).getPath().getName();
 
             String line = value.toString();
-            String[] words = line.split("[\\s\\p{Punct}]+");
-
-            for (String word : words) {
+            String[] words = line.split("[\\s\\p{Punct}]+"); 
+            for(String word: words){
                 if (word != null && !word.trim().isEmpty()) {
                     String lowerWord = word.toLowerCase();
-                    if (queryWords.contains(lowerWord)) {
-                        context.write(new Text(lowerWord), new File_Value(file, 1));
-                    }
+                    Word_File wf = new Word_File(lowerWord, file);
+                    if(H.containsKey(wf))
+                        H.put(wf,H.get(wf)+1);
+                    else
+                        H.put(wf,1);
                 }
             }
         }
-    }
-
-    public static class InvertedIndexCombiner extends Reducer<Text, File_Value, Text, File_Value> {
 
         @Override
-        public void reduce(Text key, Iterable<File_Value> values, Context context)
-                throws IOException, InterruptedException {
-            
-            Map<String, Integer> fileCounts = new HashMap<>();
-
-            for (File_Value fv : values) {
-                String file = fv.file;
-                int count = fv.value;
-
-                fileCounts.put(file, fileCounts.getOrDefault(file, 0) + count);
-            }
-
-            for (Map.Entry<String, Integer> entry : fileCounts.entrySet()) {
-                context.write(key, new File_Value(entry.getKey(), entry.getValue()));
+        public void cleanup(Context context) throws IOException, InterruptedException
+        {
+            for(Map.Entry<Word_File, Integer> entry: H.entrySet()){
+                Word_File wf = entry.getKey();
+                int val = entry.getValue();
+                context.write(new Text(wf.word), new File_Value(wf.file, val));
             }
         }
     }
@@ -106,18 +88,17 @@ public class InvertedIndex
     {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-        if (otherArgs.length < 3) {
-           System.err.println("Usage: InvertedIndex <input1> [<input2> ...] <output> <query>");
+        if (otherArgs.length != 2) {
+           System.err.println("Usage: InvertedIndex <input> <output>");
            System.exit(1);
         }
-        String query = otherArgs[otherArgs.length - 1];
-        conf.set("query", query);
+        System.out.println("args[0]: <input>="  + otherArgs[0]);
+        System.out.println("args[1]: <output>=" + otherArgs[1]);
 
         Job job = Job.getInstance(conf, "InvertedIndex");
 
         job.setJarByClass(InvertedIndex.class);
         job.setMapperClass(InvertedIndexMapper.class);
-        job.setCombinerClass(InvertedIndexCombiner.class);
         job.setReducerClass(InvertedIndexReducer.class);
 
         job.setNumReduceTasks(1);
