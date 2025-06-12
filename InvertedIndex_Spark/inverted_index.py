@@ -1,57 +1,49 @@
+import os
+import re
+import argparse
 from pyspark.sql import SparkSession
-from pathlib import Path
-import os, re, sys, argparse
+from collections import Counter
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Inverted Index con Spark."
-    )
-    parser.add_argument(
-        "-i", "--input-dir",
-        type=str,
-        required=True,
-        help="Percorso di un file o di una cartella di input."
-    )
-    parser.add_argument(
-        "-o", "--output-dir",
-        type=str,
-        required=True,
-        help="Percorso della cartella di output."
-    )
-
+    parser = argparse.ArgumentParser(description="Inverted Index Spark.")
+    parser.add_argument("-i", "--input-parquet", type=str, required=True)
+    parser.add_argument("-o", "--output-dir", type=str, required=True)
     args = parser.parse_args()
+
     spark = initialize_spark()
-    inverted_index(args.input_dir, args.output_dir, spark.sparkContext)
-    spark.sparkContext.stop()
+    inverted_index(args.input_parquet, args.output_dir, spark)
+    spark.stop()
 
+def inverted_index(input_parquet, output_dir, spark):
+    parquet_df = spark.read.parquet(input_parquet)
 
-def inverted_index(input_dir, output_dir, context):
-    collection_rdd = context.wholeTextFiles(input_dir)
-    collection_rdd = (
-        collection_rdd
-            .flatMap(lambda pair: [
-                ((token, os.path.basename(pair[0])), 1) 
-                for token in re.split(r'\W+', pair[1].lower())
-                if token and token != ""
-            ])
-            .reduceByKey(lambda x, y: x + y)
-            .map(lambda x: (x[0][0], (x[0][1], x[1])))
-            .groupByKey()  
-            .mapValues(list)
-    )
-    collection_rdd.repartition(1).saveAsTextFile(output_dir)
+    rdd = parquet_df.rdd.map(lambda row: (row['filename'], row['content'])).repartition(24).persist()
+
+    tokenizer = re.compile(r'\W+')
+
+    local_word_counts = rdd.flatMap(lambda pair: [
+        (token, [(pair[0], count)])
+        for token, count in Counter(
+            token for token in tokenizer.split(pair[1].lower()) if token
+        ).items()
+    ])
+
+    inverted_rdd = local_word_counts.reduceByKey(lambda a, b: a + b)
+
+    inverted_rdd.saveAsTextFile(output_dir)
 
 def initialize_spark():
-    spark = (SparkSession
-        .builder
-#        .master("local[*]")
+    spark = (SparkSession.builder
         .master("yarn")
-        .appName("Inverted Index.")
-#        .config("spark.hadoop.fs.defaultFS", "file:///")
-        .getOrCreate()
-    )
+        .appName("Inverted Index RDD Integrato")
+        .config("spark.executor.memory", "3g")
+        .config("spark.driver.memory", "3g")
+        .config("spark.executor.cores", "2")
+        .config("spark.executor.instances", "4")
+        .config("spark.sql.shuffle.partitions", "24")
+        .config("spark.default.parallelism", "24")
+        .getOrCreate())
     return spark
-
 
 if __name__ == "__main__":
     main()
