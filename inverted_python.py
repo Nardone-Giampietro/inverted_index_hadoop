@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+from tqdm import tqdm
 
 class WordOccurrences:
     def __init__(self, word):
