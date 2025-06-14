@@ -1,6 +1,8 @@
 import argparse
 import os
 import re
+import tracemalloc
+import time
 from tqdm import tqdm
 
 class WordOccurrences:
@@ -52,29 +54,26 @@ def inverted_index(input_dir, output_dir):
     with open(output_file, 'w', encoding='utf-8') as out_file:
         out_file.write(str(wc))
 
-
 def main():
-    parser = argparse.ArgumentParser(
-        description="Inverted Index seriale con Python"
-    )
-    parser.add_argument(
-        "-i", "--input-dir",
-        type=str,
-        help="Percorso della cartella di input.",
-        required=True
-    )
-    parser.add_argument(
-        "-o", "--output-dir",
-        type=str,
-        required=True,
-        help="Percorso della cartella di output."
-    )
+    parser = argparse.ArgumentParser(description="Inverted Index seriale con misurazione memoria.")
+    parser.add_argument("-i", "--input-dir", type=str, help="Cartella input", required=True)
+    parser.add_argument("-o", "--output-dir", type=str, help="Cartella output", required=True)
     
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
+    tracemalloc.start()
+    start_time = time.time()
+
     inverted_index(args.input_dir, args.output_dir)
 
+    end_time = time.time()
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    print(f"\nTempo totale esecuzione: {end_time - start_time:.2f} secondi")
+    print(f"Memoria massima usata: {peak / (1024**2):.2f} MB")
 
 if __name__ == "__main__":
     main()
+

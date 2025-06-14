@@ -46,9 +46,8 @@ def inverted_index(rdd, output_dir):
     )
     word_doc_counts = local_word_counts.reduceByKey(lambda x, y: x + y)
     word_to_doc_count =( word_doc_counts
-        .map(lambda x: (x[0][0], (x[0][1], x[1])))
-        .groupByKey()
-        .mapValues(list)
+        .map(lambda x: (x[0][0], [(x[0][1], x[1])]))
+        .reduceByKey(lambda list1, list2: list1 + list2) 
     )
     word_to_doc_count.saveAsTextFile(output_dir)
 
@@ -57,10 +56,6 @@ def initialize_spark():
         .builder
         .master("yarn")
         .appName("Inverted Index.")
-        .config("spark.executor.cores", "2")
-        .config("spark.executor.instances", "4")
-        .config("spark.sql.shuffle.partitions", "24")
-        .config("spark.default.parallelism", "24")
         .getOrCreate()
     )
     return spark
