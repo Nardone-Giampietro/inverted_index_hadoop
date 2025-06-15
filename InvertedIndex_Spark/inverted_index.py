@@ -1,0 +1,65 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import input_file_name
+from pathlib import Path
+from collections import Counter
+import os, re, sys, argparse
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Inverted Index con Spark."
+    )
+    parser.add_argument(
+        "-i", "--input-dir",
+        type=str,
+        required=True,
+        help="Percorso di un file o di una cartella di input."
+    )
+    parser.add_argument(
+        "-o", "--output-dir",
+        type=str,
+        required=True,
+        help="Percorso della cartella di output."
+    )
+
+    args = parser.parse_args()
+    spark = initialize_spark()
+    df = spark.read.text(args.input_dir).withColumn("filename", input_file_name())
+
+    rdd = df.rdd.map(lambda row: (
+        os.path.basename(row.filename),
+        row.value
+    ))
+
+    inverted_index(rdd, args.output_dir)
+    spark.sparkContext.stop()
+
+
+def inverted_index(rdd, output_dir):
+    tokenizer = re.compile(r'\W+')
+    local_word_counts = (
+        rdd.flatMap(lambda pair: [
+            ((token, pair[0]), count)
+            for token, count in Counter(
+                token for token in tokenizer.split(pair[1].lower()) if token
+            ).items()
+        ])
+    )
+    word_doc_counts = local_word_counts.reduceByKey(lambda x, y: x + y)
+    word_to_doc_count =( word_doc_counts
+        .map(lambda x: (x[0][0], [(x[0][1], x[1])]))
+        .reduceByKey(lambda list1, list2: list1 + list2) 
+    )
+    word_to_doc_count.saveAsTextFile(output_dir)
+
+def initialize_spark():
+    spark = (SparkSession
+        .builder
+        .master("yarn")
+        .appName("Inverted Index.")
+        .getOrCreate()
+    )
+    return spark
+
+
+if __name__ == "__main__":
+    main()
