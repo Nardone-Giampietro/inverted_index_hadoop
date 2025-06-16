@@ -19,58 +19,60 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
-
-public class InvertedIndex
-{
-    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> 
-    {
-    
-        Map<Word_File, Integer> H = new HashMap<>();
+public class InvertedIndexCombiner {
+    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> {
 
         @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException 
-        {   
-            
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String file = ((FileSplit) context.getInputSplit()).getPath().getName();
 
             String line = value.toString();
-            String[] words = line.split("[\\s\\p{Punct}]+"); 
-            for(String word: words){
+            String[] words = line.split("[\\s\\p{Punct}]+");
+
+            for (String word : words) {
                 if (word != null && !word.trim().isEmpty()) {
                     String lowerWord = word.toLowerCase();
-                    Word_File wf = new Word_File(lowerWord, file);
-                    H.merge(wf, 1, Integer::sum);
+                    context.write(new Text(lowerWord), new File_Value(file, 1));
                 }
-            }
-        }
-
-        @Override
-        public void cleanup(Context context) throws IOException, InterruptedException
-        {
-            for(Map.Entry<Word_File, Integer> entry: H.entrySet()){
-                Word_File wf = entry.getKey();
-                int val = entry.getValue();
-                context.write(new Text(wf.word), new File_Value(wf.file, val));
             }
         }
     }
 
-    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text>
-    {
+    public static class Combiner extends Reducer<Text, File_Value, Text, File_Value> {
 
         @Override
-        public void reduce(Text key, Iterable<File_Value> values, Context context) throws IOException, InterruptedException 
-        {
+        public void reduce(Text key, Iterable<File_Value> values, Context context)
+                throws IOException, InterruptedException {
+
+            Map<String, Integer> fileCounts = new HashMap<>();
+
+            for (File_Value fv : values) {
+                String file = fv.getFile();
+                int count = fv.getValue();
+
+                fileCounts.put(file, fileCounts.getOrDefault(file, 0) + count);
+            }
+
+            for (Map.Entry<String, Integer> entry : fileCounts.entrySet()) {
+                context.write(key, new File_Value(entry.getKey(), entry.getValue()));
+            }
+        }
+    }
+
+    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text> {
+
+        @Override
+        public void reduce(Text key, Iterable<File_Value> values, Context context)
+                throws IOException, InterruptedException {
             Map<String, Integer> H = new HashMap<>();
 
             for (File_Value fv : values) {
                 H.merge(fv.getFile(), fv.getValue(), Integer::sum);
             }
 
-
             String outputValue = "";
-            
-            for(Map.Entry<String, Integer> entry: H.entrySet()){
+
+            for (Map.Entry<String, Integer> entry : H.entrySet()) {
                 String file = entry.getKey();
                 int value = entry.getValue();
                 outputValue = outputValue + "   " + file + ":" + value;
@@ -79,30 +81,28 @@ public class InvertedIndex
         }
     }
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (otherArgs.length != 2) {
-           System.err.println("Usage: InvertedIndex <input> <output>");
-           System.exit(1);
+            System.err.println("Usage: InvertedIndex <input> <output>");
+            System.exit(1);
         }
-        System.out.println("args[0]: <input>="  + otherArgs[0]);
-        System.out.println("args[1]: <output>=" + otherArgs[1]);
 
         Job job = Job.getInstance(conf, "InvertedIndex");
 
-        job.setJarByClass(InvertedIndex.class);
+        job.setJarByClass(InvertedIndexCombiner.class);
         job.setMapperClass(InvertedIndexMapper.class);
+        job.setCombinerClass(Combiner.class);
         job.setReducerClass(InvertedIndexReducer.class);
+
+        job.setNumReduceTasks(12);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(File_Value.class);
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-
-        job.setNumReduceTasks(12);
 
         FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
@@ -111,6 +111,5 @@ public class InvertedIndex
         job.setOutputFormatClass(TextOutputFormat.class);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-     }
+    }
 }
-
