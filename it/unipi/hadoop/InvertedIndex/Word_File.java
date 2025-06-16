@@ -2,22 +2,22 @@ package it.unipi.hadoop;
 
 import java.util.Objects;
 
-public class Word_File{
+public class Word_File {
     String word;
     String file;
 
-    public Word_File(String word, String file){
-        this.word=word;
-        this.file=file;
+    public Word_File(String word, String file) {
+        this.word = word;
+        this.file = file;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o)
+    public boolean equals(Object obj) {
+        if (this == obj)
             return true;
-        if (!(o instanceof Word_File))
+        if (!(obj instanceof Word_File))
             return false;
-        Word_File wf = (Word_File) o;
+        Word_File wf = (Word_File) obj;
         return word.equals(wf.word) && file.equals(wf.file);
     }
 
@@ -25,4 +25,3 @@ public class Word_File{
         return Objects.hash(word, file);
     }
 }
-

@@ -64,15 +64,15 @@ public class InvertedIndexCombiner {
         @Override
         public void reduce(Text key, Iterable<File_Value> values, Context context)
                 throws IOException, InterruptedException {
-            Map<String, Integer> H = new HashMap<>();
+            Map<String, Integer> freqMap = new HashMap<>();
 
             for (File_Value fv : values) {
-                H.merge(fv.getFile(), fv.getValue(), Integer::sum);
+                freqMap.merge(fv.getFile(), fv.getValue(), Integer::sum);
             }
 
             String outputValue = "";
 
-            for (Map.Entry<String, Integer> entry : H.entrySet()) {
+            for (Map.Entry<String, Integer> entry : freqMap.entrySet()) {
                 String file = entry.getKey();
                 int value = entry.getValue();
                 outputValue = outputValue + "   " + file + ":" + value;

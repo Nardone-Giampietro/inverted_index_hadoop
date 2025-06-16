@@ -22,7 +22,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 public class InvertedIndex {
     public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> {
 
-        Map<Word_File, Integer> H = new HashMap<>();
+        Map<Word_File, Integer> freqMap = new HashMap<>();
 
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -35,14 +35,14 @@ public class InvertedIndex {
                 if (word != null && !word.trim().isEmpty()) {
                     String lowerWord = word.toLowerCase();
                     Word_File wf = new Word_File(lowerWord, file);
-                    H.merge(wf, 1, Integer::sum);
+                    freqMap.merge(wf, 1, Integer::sum);
                 }
             }
         }
 
         @Override
         public void cleanup(Context context) throws IOException, InterruptedException {
-            for (Map.Entry<Word_File, Integer> entry : H.entrySet()) {
+            for (Map.Entry<Word_File, Integer> entry : freqMap.entrySet()) {
                 Word_File wf = entry.getKey();
                 int val = entry.getValue();
                 context.write(new Text(wf.word), new File_Value(wf.file, val));
@@ -55,15 +55,15 @@ public class InvertedIndex {
         @Override
         public void reduce(Text key, Iterable<File_Value> values, Context context)
                 throws IOException, InterruptedException {
-            Map<String, Integer> H = new HashMap<>();
+            Map<String, Integer> freqMap = new HashMap<>();
 
             for (File_Value fv : values) {
-                H.merge(fv.getFile(), fv.getValue(), Integer::sum);
+                freqMap.merge(fv.getFile(), fv.getValue(), Integer::sum);
             }
 
             String outputValue = "";
 
-            for (Map.Entry<String, Integer> entry : H.entrySet()) {
+            for (Map.Entry<String, Integer> entry : freqMap.entrySet()) {
                 String file = entry.getKey();
                 int value = entry.getValue();
                 outputValue = outputValue + "   " + file + ":" + value;
