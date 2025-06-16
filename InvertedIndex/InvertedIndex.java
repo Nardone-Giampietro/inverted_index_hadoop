@@ -39,10 +39,7 @@ public class InvertedIndex
                 if (word != null && !word.trim().isEmpty()) {
                     String lowerWord = word.toLowerCase();
                     Word_File wf = new Word_File(lowerWord, file);
-                    if(H.containsKey(wf))
-                        H.put(wf,H.get(wf)+1);
-                    else
-                        H.put(wf,1);
+                    H.merge(wf, 1, Integer::sum);
                 }
             }
         }
@@ -66,12 +63,10 @@ public class InvertedIndex
         {
             Map<String, Integer> H = new HashMap<>();
 
-            for(File_Value fv: values){
-                if(H.containsKey(fv.file))
-                    H.put(fv.file, H.get(fv.file)+fv.value);
-                else
-                    H.put(fv.file,fv.value);
+            for (File_Value fv : values) {
+                H.merge(fv.getFile(), fv.getValue(), Integer::sum);
             }
+
 
             String outputValue = "";
             
@@ -101,13 +96,13 @@ public class InvertedIndex
         job.setMapperClass(InvertedIndexMapper.class);
         job.setReducerClass(InvertedIndexReducer.class);
 
-        job.setNumReduceTasks(1);
-
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(File_Value.class);
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
+
+        job.setNumReduceTasks(12);
 
         FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
@@ -118,3 +113,4 @@ public class InvertedIndex
         System.exit(job.waitForCompletion(true) ? 0 : 1);
      }
 }
+
