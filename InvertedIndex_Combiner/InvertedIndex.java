@@ -19,12 +19,9 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
+public class InvertedIndex {
+    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> {
 
-public class InvertedIndex
-{
-    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> 
-    {
-    
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String file = ((FileSplit) context.getInputSplit()).getPath().getName();
@@ -46,7 +43,7 @@ public class InvertedIndex
         @Override
         public void reduce(Text key, Iterable<File_Value> values, Context context)
                 throws IOException, InterruptedException {
-            
+
             Map<String, Integer> fileCounts = new HashMap<>();
 
             for (File_Value fv : values) {
@@ -62,24 +59,23 @@ public class InvertedIndex
         }
     }
 
-    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text>
-    {
+    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text> {
 
         @Override
-        public void reduce(Text key, Iterable<File_Value> values, Context context) throws IOException, InterruptedException 
-        {
-            Map<String, Integer> H = new HashMap<>();
+        public void reduce(Text key, Iterable<File_Value> values, Context context)
+                throws IOException, InterruptedException {
+            Map<String, Integer> freqMap = new HashMap<>();
 
-            for(File_Value fv: values){
-                if(H.containsKey(fv.file))
-                    H.put(fv.file, H.get(fv.file)+fv.value);
+            for (File_Value fv : values) {
+                if (freqMap.containsKey(fv.file))
+                    freqMap.put(fv.file, freqMap.get(fv.file) + fv.value);
                 else
-                    H.put(fv.file,fv.value);
+                    freqMap.put(fv.file, fv.value);
             }
 
             String outputValue = "";
-            
-            for(Map.Entry<String, Integer> entry: H.entrySet()){
+
+            for (Map.Entry<String, Integer> entry : freqMap.entrySet()) {
                 String file = entry.getKey();
                 int value = entry.getValue();
                 outputValue = outputValue + "   " + file + ":" + value;
@@ -88,13 +84,12 @@ public class InvertedIndex
         }
     }
 
-    public static void main(String[] args) throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (otherArgs.length != 2) {
-           System.err.println("Usage: InvertedIndex <input> <output>");
-           System.exit(1);
+            System.err.println("Usage: InvertedIndex <input> <output>");
+            System.exit(1);
         }
 
         Job job = Job.getInstance(conf, "InvertedIndex");
@@ -119,5 +114,5 @@ public class InvertedIndex
         job.setOutputFormatClass(TextOutputFormat.class);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-     }
+    }
 }
