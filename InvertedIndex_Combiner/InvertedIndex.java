@@ -1,4 +1,4 @@
-package it.unpi.hadoop;
+package it.unipi.hadoop;
 
 import java.io.IOException;
 import java.util.Map;
@@ -19,9 +19,12 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
-public class InvertedIndex {
-    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> {
 
+public class InvertedIndexCombiner
+{
+    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, File_Value> 
+    {
+    
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String file = ((FileSplit) context.getInputSplit()).getPath().getName();
@@ -38,17 +41,17 @@ public class InvertedIndex {
         }
     }
 
-    public static class InvertedIndexCombiner extends Reducer<Text, File_Value, Text, File_Value> {
+    public static class Combiner extends Reducer<Text, File_Value, Text, File_Value> {
 
         @Override
         public void reduce(Text key, Iterable<File_Value> values, Context context)
                 throws IOException, InterruptedException {
-
+            
             Map<String, Integer> fileCounts = new HashMap<>();
 
             for (File_Value fv : values) {
-                String file = fv.file;
-                int count = fv.value;
+                String file = fv.getFile();
+                int count = fv.getValue();
 
                 fileCounts.put(file, fileCounts.getOrDefault(file, 0) + count);
             }
@@ -59,23 +62,21 @@ public class InvertedIndex {
         }
     }
 
-    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text> {
+    public static class InvertedIndexReducer extends Reducer<Text, File_Value, Text, Text>
+    {
 
         @Override
-        public void reduce(Text key, Iterable<File_Value> values, Context context)
-                throws IOException, InterruptedException {
-            Map<String, Integer> freqMap = new HashMap<>();
+        public void reduce(Text key, Iterable<File_Value> values, Context context) throws IOException, InterruptedException 
+        {
+            Map<String, Integer> H = new HashMap<>();
 
             for (File_Value fv : values) {
-                if (freqMap.containsKey(fv.file))
-                    freqMap.put(fv.file, freqMap.get(fv.file) + fv.value);
-                else
-                    freqMap.put(fv.file, fv.value);
+                H.merge(fv.getFile(), fv.getValue(), Integer::sum);
             }
-
+            
             String outputValue = "";
-
-            for (Map.Entry<String, Integer> entry : freqMap.entrySet()) {
+            
+            for(Map.Entry<String, Integer> entry: H.entrySet()){
                 String file = entry.getKey();
                 int value = entry.getValue();
                 outputValue = outputValue + "   " + file + ":" + value;
@@ -84,22 +85,23 @@ public class InvertedIndex {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception
+    {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         if (otherArgs.length != 2) {
-            System.err.println("Usage: InvertedIndex <input> <output>");
-            System.exit(1);
+           System.err.println("Usage: InvertedIndex <input> <output>");
+           System.exit(1);
         }
 
         Job job = Job.getInstance(conf, "InvertedIndex");
 
-        job.setJarByClass(InvertedIndex.class);
+        job.setJarByClass(InvertedIndexCombiner.class);
         job.setMapperClass(InvertedIndexMapper.class);
-        job.setCombinerClass(InvertedIndexCombiner.class);
+        job.setCombinerClass(Combiner.class);
         job.setReducerClass(InvertedIndexReducer.class);
 
-        job.setNumReduceTasks(1);
+        job.setNumReduceTasks(12);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(File_Value.class);
@@ -114,5 +116,5 @@ public class InvertedIndex {
         job.setOutputFormatClass(TextOutputFormat.class);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-    }
+     }
 }
