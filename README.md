@@ -34,7 +34,7 @@ important  doc2.txt:1
   - Tempo di esecuzione
   - Uso di memoria
   - Altri indicatori rilevanti
-- Redigere una **relazione tecnica** (massimo 4–5 pagine), contenente:
+- Redigere una **relazione tecnica** che contenente:
   - Pseudocodice della soluzione MapReduce in Hadoop
   - Descrizione dei dataset
   - Analisi sperimentale
