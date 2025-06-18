@@ -13,7 +13,7 @@ def main():
     parser.add_argument(
         "-i", "--index-dir",
         required=True,
-        help="Percorso della cartella contenente i file inverted index (.txt)"
+        help="Percorso della cartella contenente i file inverted index"
     )
     parser.add_argument(
         "-q", "--query",
