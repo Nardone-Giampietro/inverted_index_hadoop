@@ -1,6 +1,4 @@
-# Cloud Computing Project of group CloudiPi
-
-# Progetto: Motore di Ricerca con Inverted Index
+# Cloud Computing Project of group CloudiPi: Motore di Ricerca con Inverted Index
 
 ## Obiettivo
 
@@ -33,13 +31,13 @@ important  doc2.txt:1
 
 - Usare una collezione di file a scelta (es. articoli, libri, pagine web), con dimensioni variabili da **pochi KB a diversi GB**
 - Eseguire una **valutazione comparativa delle performance**, raccogliendo:
-- Tempo di esecuzione
-- Uso di memoria
-- Altri indicatori rilevanti
+  - Tempo di esecuzione
+  - Uso di memoria
+  - Altri indicatori rilevanti
 - Redigere una **relazione tecnica** (massimo 4–5 pagine), contenente:
-- Pseudocodice della soluzione MapReduce in Hadoop
-- Descrizione dei dataset
-- Analisi sperimentale
+  - Pseudocodice della soluzione MapReduce in Hadoop
+  - Descrizione dei dataset
+  - Analisi sperimentale
 
 ## Requisiti aggiuntivi
 
