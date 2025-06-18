@@ -42,5 +42,5 @@ important  doc2.txt:1
 ## Requisiti aggiuntivi
 
 - Implementare la logica di **in-mapper combining**
-- Sviluppare una **versione parallela in Python** per la costruzione dell’inverted index (usando multiprocessing o librerie parallele)
+- Sviluppare una **versione non parallela in Python** per la costruzione dell’inverted index 
 - Aumentare il **numero di reducer** e raccogliere statistiche relative all'esecuzione
