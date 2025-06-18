@@ -63,9 +63,9 @@ if __name__ == "__main__":
     results = search_files(args.folder, terms)
     elapsed = time.perf_counter() - start
 
-    # if not args.quiet:
-    #     for fn in results:
-    #         print(fn)
+    if not args.quiet:
+        for fn in results:
+            print(fn)
 
     print(
         f"\nTempo totale: {elapsed:.4f} secondi su '{args.folder}' ({len(results)} match)"
