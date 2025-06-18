@@ -13,21 +13,21 @@ is         doc1.txt:1
 important  doc2.txt:1
 ```
 
-## Requisiti principali (fino a 4 punti)
+## Requisiti principali
 
 - Installare **Hadoop in modalità completamente distribuita** (fully distributed mode).
 - Implementare due versioni dell’inverted index:
   - Una utilizzando **Hadoop (Java)**
   - Una utilizzando **Spark (Python)**
 - Per ogni parola rilevata, l’output dell’inverted index deve includere:
-  1. I nomi dei file in cui compare la parola
-  2. Il numero di occorrenze della parola in ciascun file
+  - I nomi dei file in cui compare la parola
+  - Il numero di occorrenze della parola in ciascun file
 
 - Implementare la logica di **combiner**
 - Utilizzare i metodi `setup()` e `cleanup()`, se appropriato
 - Realizzare un semplice **motore di ricerca in Python (non parallelo)** che:
-- Riceve una query testuale
-- Restituisce **solo i nomi dei file** che contengono **tutti** i termini della query (non deve indicare il numero di occorrenze)
+  - Riceve una query testuale
+  - Restituisce **solo i nomi dei file** che contengono **tutti** i termini della query (non deve indicare il numero di occorrenze)
 
 - Usare una collezione di file a scelta (es. articoli, libri, pagine web), con dimensioni variabili da **pochi KB a diversi GB**
 - Eseguire una **valutazione comparativa delle performance**, raccogliendo:
