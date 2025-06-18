@@ -96,7 +96,7 @@ public class InvertedIndexCombiner {
         job.setCombinerClass(Combiner.class);
         job.setReducerClass(InvertedIndexReducer.class);
 
-        job.setNumReduceTasks(12);
+        job.setNumReduceTasks(1);
 
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(File_Value.class);
