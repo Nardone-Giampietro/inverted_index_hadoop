@@ -3,7 +3,7 @@ import sys
 
 def main():
     """
-    Programma che, dato un file di inverted index e una query,
+    Dato un file di inverted index e una query,
     restituisce i nomi dei documenti che contengono tutte le parole della query.
     """
     
