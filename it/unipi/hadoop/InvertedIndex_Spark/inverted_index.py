@@ -67,6 +67,8 @@ def inverted_index(rdd, output_dir):
         ])
     )
 
+    word_doc_counts = local_word_counts.reduceByKey(lambda x, y: x + y)
+    
     # Fase 2: somma globale delle occorrenze ((parola, file), totale)
     # Output: (parola, [(file1, count1), (file2, count2), ...])
     word_to_doc_count = (
