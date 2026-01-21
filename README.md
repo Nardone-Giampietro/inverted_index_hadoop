@@ -1,4 +1,4 @@
-# Progetto Cloud Computing del gruppo CloudiPi: Motore di Ricerca con Inverted Index
+# Progetto Cloud Computing: Motore di Ricerca con Inverted Index
 
 ## Obiettivo
 
